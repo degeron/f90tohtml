@@ -1,0 +1,1338 @@
+#!/usr/bin/perl  
+$path_f90tohtml='/home/bfiedler/f90tohtml/'; #path to this directory
+
+#credits: Brian Fiedler, Rafal Jabrzemski and Chris Hudgin
+#School of Meteorology, University of Oklahoma
+#VERSION 0.8 7/22/98 -- add search engine, tagging functions 
+#VERSION 0.9 5/12/00 -- fix bug in tagging modules, calls to missing subs, 
+#                       defaults search engine, bugs with f90 interfaces        
+#VERSION 1.0 3/18/02 -- no major changes: v0.9 was stable enough to be called v1.0
+#VERSION 1.01 3/28/03 -- changed "while ($line=shift(@broken))" to "while (scalar(@broken))" 
+#VERSION 1.02 3/30/03 -- allows "commenting out" file names in .ls files
+#                     -- improves finding functions with continuation symbol & before (
+#VERSION 1.03 6/10/03 -- fixed new bugs introduced with 1.02 "improvements" with &,
+#                     -- and fixed old bugs with .F90 extension, subroutine calls, and
+#                     -- unclosed html tags.  Thanks to Toby White for the suggestions.
+#VERSION 1.03a 6/12/03 -- fixed one line 
+#VERSION 1.1 11/12/2003 --fixed handling of recursive subroutine calls in trees, interfaces,
+#                      --finding subroutine calls, and some html corrections.  Thanks to
+#                      --Toby White for those.  Add colorizing of comments, via $comment_color
+#VERSION 1.11 3/16/2004 -- $c_comment consistently finds leading C, c or *
+#                       -- rcs handling deleted.
+
+#On July 10, 2008 this code was moved to http://code.google.com/p/f90tohtml/
+#The code was uploaded with the "MIT License", so I suppose it should appear
+#here too:
+###############################
+#Copyright (c) 2008 by Brian Fiedler
+#
+#Permission is hereby granted, free of charge, to any person
+#obtaining a copy of this software and associated documentation
+#files (the "Software"), to deal in the Software without
+#restriction, including without limitation the rights to use,
+#copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the
+#Software is furnished to do so, subject to the following
+#conditions:
+#
+#The above copyright notice and this permission notice shall be
+#included in all copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+#EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+#OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+#NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+#HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+#WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+#OTHER DEALINGS IN THE SOFTWARE.
+##############################
+
+
+$start=(times)[0];
+&open_config_file;
+&set_html_tags;
+
+if (! -e "$dir_html"."README"){
+$the_tar=$path_f90tohtml."Generic_Browser.tar";
+(-e $the_tar) or $the_tar="Generic_Browser.tar";
+(-e $the_tar) or die "oops no $the_tar\n";
+$newdir=$dir_html;
+chop($newdir);
+$newdirpath=$newdir;
+$newdirpath=~s+/.*$++;
+system "tar xvf $the_tar";
+print "Creating $newdir \n";
+system "cp -r Generic_Browser $newdir" ;
+system "rm -R -f Generic_Browser" ;
+}
+open(LOG,">$dir_html"."log.html") ;
+print LOG "<html><body><pre>\nWarnings follow:\n\n";
+
+&create_contents_file;
+foreach $ref (@file_array){
+    ($filename,$title,$thecolor) = @$ref;
+    push (@titles,$title);
+    $filenames{$title}=$filename;
+    $colors{$title}=$thecolor;
+    print "$title $filenames{$title} $colors{$title}\n" ;
+    open(THELIST,$filename) or
+        die ("cannot open the .ls file $filename");
+#    @allfiles=<THELIST>; #old way
+	@allfiles=();
+	while ($theline=<THELIST>){
+		next if $theline=~m/^\s*\#/;  #new 30-3-2003
+		push @allfiles,$theline;
+    }
+    $filehash{$title}=[@allfiles];
+    close THELIST;
+	&copy_to_html;
+}
+
+
+foreach $title (@titles){
+if ($parse_include || ($title ne "include")){
+	push @parsetitles,$title;
+	}
+else{
+	push @nonparsetitles,$title}
+}
+
+$all_loc{"unknown"}="unknown";
+foreach $title (@titles){
+	$bgcolor=$colors{$title};
+    foreach $Infile (@{$filehash{$title}}) {  
+		$infile=$Infile;
+        chomp($infile);
+		$doing_what="TAGGING";
+        &open_infile_and_outfile;
+    	$htmlhead = '<HTML> <BODY BGCOLOR='.
+            "$bgcolor LINK=$linkcolor VLINK=$vlinkcolor ALINK=$alinkcolor >".
+            '<BASE TARGET="'.$bottom_target.'"><PRE>'."\n";
+		if ($title eq "include"){
+			$fnamerel=&rela($fname,2);
+            $htmlhead.=
+            "<A href='$fnamerel' TARGET='$top_target'>".
+            "$grey_bar</A>";
+			$htmlhead.="<a name='$infileName'>\n";
+			$htmlhead.="include file: $infileName\n" if ($parse_include);
+		}
+        print OUTFILE $htmlhead;
+		@thefile=<INFILE>;
+		$all_loc{$infileName}=$fname;
+		&convert_html_specials;
+		if ($parse_include || ($title ne "include")){
+        &tag_it(\%{$prog_loc{$title}},"program",$yellow_bar);
+        &tag_it(\%{$sub_loc{$title}},"subroutine",$red_bar);
+        &tag_it(\%{$fun_loc{$title}},"function",$green_bar);
+        &tag_it(\%{$module_loc{$title}},"module",$purple_bar);
+        &tag_it(\%{$sub_loc{$title}},"interface",$red_bar);
+		}
+		if ($title eq "include") {
+			$include_loc{$title}{$infileName}=$fname;
+		}
+		print OUTFILE @thefile;
+        &close_files_and_rename;
+    }
+    for $key (keys %{$sub_loc{$title}}){
+		$all_sub_loc{$key}=$sub_loc{$title}{$key};
+	}
+    for $key (keys %{$module_loc{$title}}){
+		$all_sub_loc{$key}=$module_loc{$title}{$key};
+	}
+    for $key (keys %{$fun_loc{$title}}){
+		if ($function_prefix){
+		$all_sub_loc{$key}=$fun_loc{$title}{$key} if ($key=~m/.*$function_prefix.*/i);
+		}
+		else{
+		$all_sub_loc{$key}=$fun_loc{$title}{$key}; 
+		}
+		$all_fun_loc{$key}=$fun_loc{$title}{$key}; 
+	}
+}
+
+
+foreach $title (@parsetitles){
+	$bgcolor=$colors{$title};
+    
+    $doing_what="linking CALL to SUBROUTINE";
+    foreach $Infile (@{$filehash{$title}}) {  
+		$infile=$Infile;
+        chomp($infile);
+        &open_infile_and_outfile;
+        &link_subroutine_calls;
+        &close_files_and_rename;
+    }
+}
+    $doing_what="making CALL FROM html file";
+	foreach $xkey (keys %called_subs){
+		$title=$title_of_sub{$xkey};
+		$bgcolor=$colors{$title};
+		@thecalls= sort @{$called_subs{$xkey}};
+		$number_calls_from{$xkey}=scalar(@thecalls);
+		%howmany=&remove_dup(\@thecalls);
+		&create_call_from_file($xkey,\@thecalls,\%howmany);
+		$howmanycalls{$xkey}={%howmany};
+	}
+my($htmlfoot) = "</pre></body></html>";
+foreach $title (@parsetitles){
+       $bgcolor=$colors{$title};
+    $doing_what="linking SUBROUTINE back to CALL(s)";
+    foreach $Infile (@{$filehash{$title}}) {  
+		$infile=$Infile;
+        chomp($infile);
+        &open_infile_and_outfile;
+        &link_back_to_calls;
+        print OUTFILE $htmlfoot;
+        &close_files_and_rename;
+    } 
+}
+if (defined($comment_color)){
+foreach $title (@parsetitles){
+    $doing_what="colorizing comments";
+    foreach $Infile (@{$filehash{$title}}) {  
+		$infile=$Infile;
+        chomp($infile);
+        &open_infile_and_outfile;
+        &colorize_comments;
+        &close_files_and_rename;
+    } 
+}
+}
+foreach $title (@nonparsetitles){
+    $doing_what="adding linenumber to include file";
+    foreach $Infile (@{$filehash{$title}}) {  
+		$infile=$Infile;
+        chomp($infile);
+        &open_infile_and_outfile;
+        &add_line_number;
+        print OUTFILE $htmlfoot;
+        &close_files_and_rename;
+    } 
+}
+foreach $key (@more_trees){
+	if ($seq_calls_loc{$key}){
+		$bgcolor=$bgcolor_of_sub{$key};
+		$code_index="";
+		&plant_tree(\%seq_calls_loc,$key)
+	}
+	else{
+		print LOG "cannot plant $key\n";
+	}
+}
+foreach $title (@titles){
+	$bgcolor=$colors{$title};
+    @allfiles=@{$filehash{$title}};
+    &create_code_index;
+    &put_links_in_file_index;
+    &put_links_in_code_index("programs",\%{$prog_loc{$title}},$bottom_target);
+    &put_links_in_code_index("subroutines",\%{$sub_loc{$title}},$bottom_target);
+    &put_links_in_code_index("functions",\%{$fun_loc{$title}},$bottom_target);
+    &put_links_in_code_index("modules",\%{$module_loc{$title}},$bottom_target);
+    &put_links_in_code_index("includes",\%{$include_loc{$title}},$bottom_target);
+    &close_code_index;
+}
+&add_to_contents_file;
+&create_subject_index if $subject_hash;
+&add_search_engine;
+&create_browser_file;    
+&make_legend;
+&make_stats('statsb.html','biggestval');
+&make_stats('stats.html','asciibetically');
+
+print LOG "</pre></body></html>\n";
+
+print "WOW!  This script apparently finished OK! \n";
+if ($warnings) {print "...but with $warnings warnings.
+Check warnings page in browser.\n"}
+$end=(times)[0];
+printf "That took %.2f CPU seconds.\n", $end - $start;
+print "Use netscape to open:\n ","$dir_html"."index.html"."\n";
+
+#END OF SCRIPT
+
+##@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+sub plant_tree{
+local ($hoa,$prog_name)=@_;
+	my($line);
+	print " will plant $prog_name\n";
+   	$tree_file="ind/".$prog_name."\_tree.html";
+    open(TREEFILE,">$dir_html"."$tree_file")
+		|| die (" cannot open file...");
+    print TREEFILE "<HTML>\n";
+    print TREEFILE "<HEAD>\n";
+    print TREEFILE "<TITLE>"."$prog_name TREE"."</TITLE>";
+    print TREEFILE "<A NAME=\"TOP\">\n";
+    print TREEFILE "<\/HEAD>\n";
+    print TREEFILE "<BODY BGCOLOR=$bgcolor ".
+		"LINK=$linkcolor VLINK=$vlinkcolor ALINK=$alinkcolor >\n";
+	if ($code_index){
+    $line="back to:<br>".
+	"<A href='../$code_index' TARGET='index'>$title index</A>";
+    print TREEFILE "<FONT COLOR=\#990000>$line</FONT><BR>";
+	}
+    print TREEFILE "<PRE>\n";
+	$indent=0;
+        @call_stack=();
+        push @call_stack, $prog_name;
+	&branch_it($prog_name,$all_loc{$prog_name}."\#$prog_name",$indent,1,@call_stack);
+    print TREEFILE "<\/PRE>\n";
+	close TREEFILE;
+}
+
+
+#########################################
+sub put_tree_on_tree{
+my($indent,$root,$calling,$seq_calls,$sub_tree_file)=@_;
+my($filename,$indent_string);
+$indent_string= "-|-" x $indent;
+$indent_plus="-|-" x ($indent+1);
+if ($root eq "truncated"){
+print TREEFILE
+	"$indent_string"."truncated\n";
+}
+else {
+$seq_calls="" if ($seq_calls <2);
+	$relloc=&rela($calling,1);
+	$relloc2=&rela($sub_tree_file,1);
+	print TREEFILE "$indent_string"."<A href='$relloc'".
+		" TARGET='$top_target'>$root</A> $seq_calls\n".
+		"$indent_plus<A href='$relloc2' TARGET='$bottom_target'>$green_ball</A>\n"
+
+}
+}
+
+#########################################
+sub put_on_tree{
+my($indent,$root,$calling,$seq_calls)=@_;
+my($filename,$indent_string);
+$indent_string= "-|-" x $indent;
+if ($root eq "truncated"){
+print TREEFILE
+	"$indent_string"."truncated\n";
+}
+else {
+$seq_calls="" if ($seq_calls <2);
+	$relloc=&rela($calling,1);
+	print TREEFILE "$indent_string"."<A href='$relloc'".
+		" TARGET='$top_target'>$root</A> $seq_calls\n";
+}
+}
+
+#########################################
+sub branch_it{
+my ($root,$call_to_root,$indent,$seq_calls,@call_stack)=@_;
+my ($callto,$calling,$branch,@thecalls,@howmany,$n);
+&put_on_tree($indent,$root,$call_to_root,$seq_calls);
+if ($$hoa{$root}) {
+@thecalls=@{$$hoa{$root}};
+@howmany=&remove_seq(\@thecalls);
+++$indent;
+if ($indent <= $tree_depth) {
+	$n=0;
+	foreach $calling (@thecalls){
+		$callto=$calling;
+		$callto=~s/^.*\#//;
+		$callto=~m/^.*\_/;
+		$callto=$&;
+		chop($callto);
+		if (&inarray($callto,\@more_trees)){
+   		$sub_tree_file=$dir_html."ind/".$callto."\_tree.html";
+		&put_tree_on_tree($indent,$callto,
+			$calling,$howmany[$n],$sub_tree_file);
+		}
+		else{
+		$recurse=0;
+                foreach $elt (@call_stack)
+                {if ($elt eq $callto) {$recurse=1; last;}}
+                if ($recurse)
+                { &put_on_tree($indent,"recursing ... $callto",$calling); }
+                else {
+                push @call_stack, $callto;
+		&branch_it($callto,$calling,$indent,$howmany[$n],@call_stack) unless &inarray($callto,\@not_on_tree);
+                pop @call_stack; }
+		}
+		++$n;
+	}
+}
+elsif (scalar(@thecalls)){
+	&put_on_tree($indent,"truncated",1);
+}
+}
+}
+
+#########################################
+sub inarray{
+my($one,$ra)=@_;
+my($found,$elem);
+$found=0;
+foreach $elem (@$ra){
+$found++ if $one eq $elem}
+return $found;
+}
+
+
+#########################################
+sub remove_dup{
+my ($ra)=@_;
+@b=@$ra;
+@$ra=();
+my %howmany;
+%howmany=();
+foreach $one (@b){
+	if (!&inarray($one,$ra)){
+		push(@$ra,$one);
+		$howmany{$one}=1}
+	else{
+		++$howmany{$one};
+	}
+}
+return %howmany;
+}
+
+#########################################
+sub remove_seq{
+my ($ra)=@_;
+my (@b,$one,@howmany,$test,$callto);
+@b=@$ra;
+@$ra=();
+@howmany=();
+foreach $one (@b){
+	$callto=$one;
+	$callto=~s/^.*\#//;
+	$callto=~m/^.*\_/;
+	$callto=$&;
+	chop($callto);
+	$test="";
+	if (scalar(@$ra)){
+		$test=$$ra[-1];
+		$test=~s/^.*\#//;
+		$test=~m/^.*\_/;
+		$test=$&;
+		chop($test);
+	};
+	if ($callto ne $test){
+		push(@$ra,$one);
+		push(@howmany,1);
+		}
+	else{
+		++$howmany[-1];
+	}
+}
+return @howmany;
+}
+
+###################################################################
+sub put_links_in_file_index {    
+
+    $length=@allfiles;
+    print FFILE "<FONT COLOR=\#009900> $length files</FONT>:<BR>\n";
+    print FFILE "<PRE>\n";
+    foreach $file (sort @allfiles){
+		$short=$file;
+		chomp($short);
+		$short=~s/^.*\///;
+		$orig=$short;
+		$short.=".html";
+		$relfile="../html_code/$title/$short";
+        print FFILE
+            "<A href='$relfile'".
+            " TARGET='$bottom_target'>$orig</A>\n";
+    }
+}
+
+#########################################
+sub create_call_from_file {    
+	my($key,$called_sub_names,$how_many_times)=@_;
+	my($called_sub,$howmany,$nspace,$space,$theref);
+	print "$key $doing_what\n" if $verbose;
+	if ($key=~m/[^a-zA-Z0-9_.]/){
+		print "Weird $key\n";
+		return
+	}
+    $call_from_file="call_from/".$key.".html";
+    open(CALLFROM,">$dir_html"."$call_from_file")
+		|| die (" cannot open file $call_from_file");
+    print CALLFROM "<HTML>\n";
+    print CALLFROM "<HEAD>\n";
+    print CALLFROM "<TITLE>"."$title"."</TITLE>";
+    print CALLFROM "<A NAME=\"TOP\">\n";
+    print CALLFROM "<\/HEAD>\n";
+    print CALLFROM "<BODY BGCOLOR=$bgcolor ".
+		"LINK=$linkcolor VLINK=$vlinkcolor ALINK=$alinkcolor >\n";
+	$howmany=$number_calls_from{$key};
+	$relloc=&rela($all_loc{$key},1);
+	$theref="<A href='$relloc#$key' target='$bottom_target'>$key</A>";		
+    print CALLFROM "<FONT COLOR=#cc0000>$howmany calls from<BR>$theref</FONT><P>";
+    print CALLFROM "<\PRE>\n";
+	foreach $called_sub (@$called_sub_names){
+			$howmany=$$how_many_times{$called_sub};
+            $nspace=8-length($called_sub);
+            if ($nspace < 2) { $nspace=2 }
+            $space=" " x $nspace;
+			$relloc=&rela($all_loc{$called_sub},1);
+            print CALLFROM "<A href='$relloc#$called_sub'".
+                 " TARGET='$bottom_target'>$called_sub</A>".
+                 "$space$howmany\n";
+	}       		 
+    print CALLFROM "</PRE>\n";
+	close CALLFROM
+}
+
+#########################################
+sub create_code_index {    
+
+    $code_index="ind/".$title."\_index.html";
+    $file_index="ind/".$title."\_f.html";
+    open(HFILE,">$dir_html"."$code_index") || die (" cannot open file...");
+    open(FFILE,">$dir_html"."$file_index") || die (" cannot open file...");
+    print HFILE "<HTML>\n";
+    print HFILE "<HEAD>\n";
+    print HFILE "<TITLE>"."$title"."</TITLE>";
+    print HFILE "<A NAME=\"TOP\">\n";
+    print HFILE "<\/HEAD>\n";
+    print HFILE "<BODY BGCOLOR=$bgcolor ".
+		"LINK=$linkcolor VLINK=$vlinkcolor ALINK=$alinkcolor >\n";
+    print HFILE "<FONT COLOR=\#990000>$title index</FONT><BR>";
+	#
+    print FFILE "<HTML>\n";
+    print FFILE "<HEAD>\n";
+    print FFILE "<TITLE>"."$title"."</TITLE>";
+    print FFILE "<A NAME=\"TOP\">\n";
+    print FFILE "<\/HEAD>\n";
+    print FFILE "<BODY BGCOLOR=$bgcolor ".
+		"LINK=$linkcolor VLINK=$vlinkcolor ALINK=$alinkcolor >\n";
+    print FFILE "<FONT COLOR=\#990000>$title</FONT><BR>";
+    $line="<A href='$code_index' TARGET='index'>$title</A>".
+          "  <A href='$file_index' TARGET='index'>ls</A>";
+    print CONTENTS "$line\n";
+}
+
+#########################################
+sub create_subject_index {    
+	$bgcolor="#eeeeee";
+    open(SUBJECT,">$dir_html"."subject_index.html")
+		|| die ("cannot open file");
+    print SUBJECT "<HTML>\n";
+    print SUBJECT "<HEAD>\n";
+    print SUBJECT "<TITLE>"."Subject Index"."</TITLE>";
+    print SUBJECT "<A NAME=\"TOP\">\n";
+    print SUBJECT "<\/HEAD>\n";
+    print SUBJECT "<BODY BGCOLOR=$bgcolor ".
+		"LINK=$linkcolor VLINK=$vlinkcolor ALINK=$alinkcolor >\n";
+    print SUBJECT "<BASE TARGET='$bottom_target'>";
+    print SUBJECT "<PRE>\n";
+	print SUBJECT "<FONT COLOR=\#990000>SUBJECT INDEX</FONT><BR>\n";
+	open (INHASH,"<$subject_hash") or die ("cannot open $subject_hash");
+	while ($line=<INHASH>){
+            chomp $line;
+			next if ($line!~m/;/);
+            ($s1,$s2,$where) = split /;/,$line;
+            $where=~ s/\s+//g; #strip all blanks
+            $where=~ tr/a-z/A-Z/;#make uppercase
+            print "$s1 $s2 $where\n" if $verbose;
+            push @{$HoH{$s1}{$s2}},$where;
+	}
+	print " making subject index\n";
+	foreach $s1 (sort(keys %HoH)){
+            print SUBJECT ("<B>$s1</B>\n");
+            foreach $s2 (sort(keys %{$HoH{$s1}})){
+                    print SUBJECT ("  $s2\n") if $s2;
+                    @where_array=@{$HoH{$s1}{$s2}};
+					foreach $where (@where_array){
+							#						$relloc=&rela($all_loc{$where},0);
+							$relloc=&rela($all_loc{$where},0) or $relloc="cannot_find_it";
+                    	$ahref="<A href='$relloc#$where'>$where</A>";
+						print SUBJECT "    $ahref\n";
+					}
+            }
+	}
+	print CONTENTS
+	"<a href='subject_index.html' target='index'>subject index</a>\n";
+}
+sub rela{
+my ($abso,$deep)=@_;
+my ($relat,$prefix);
+$prefix="../" x $deep;
+$relat=$abso;
+$relat=~s/^$dir_html//;
+$relat=$prefix.$relat;
+return $relat;
+}
+#########################################
+sub create_browser_file {    
+    open(MAINHTML,">$dir_html"."index.html") ;
+    $d_index="ind/".$default_index."\_index.html";
+	if (defined($all_loc{$default_prog})){
+    	$d_prog=&rela("$all_loc{$default_prog}#$default_prog",0);
+	}
+	else
+	{
+		$d_prog='legend.html'
+	}
+	print MAINHTML 
+"<html>
+<head>
+<title>$contents_title Browser</title>
+</head>
+<frameset cols='20%,80%'>
+<frameset rows='40%,60%'>
+<frame src='contents.html'>
+<frame src='$d_index' name='index'>
+</frameset>
+<frameset rows='50%,50%'>
+<frame src='$d_prog' name='top_target'>
+<frame src='http://mensch.org/f90tohtml/' name='bottom_target'>
+</frameset>
+</frameset>
+</html> \n";
+	close MAINHTML;
+}
+#########################################
+sub create_contents_file {    
+	$now_string=localtime;
+    open(CONTENTS,">$dir_html"."contents.html") ;
+    print CONTENTS
+	"<HTML> <BODY BGCOLOR=#ffffff LINK=$linkcolor
+	VLINK=$vlinkcolor ALINK=$alinkcolor >\n";
+	print CONTENTS 
+	"<font size=+2>$contents_title</font><br>\n";
+	print CONTENTS 
+	"<font size=-1>$now_string</font><pre>";
+	print CONTENTS
+	"<font color=\#990000>htmlized code:</font>\n";
+}
+#########################################
+sub add_to_contents_file {
+	print CONTENTS
+	"\n<font color=\#990000>other links:</font>\n";
+	print CONTENTS
+	"<a href='stats.html' target='$top_target'>code counts</a>";
+	print CONTENTS
+	" <a href='statsb.html' target='$top_target'>sort</a>\n";
+	print CONTENTS 
+	"<a href='legend.html'
+	target='bottom_target'>legend</a>\n";
+	print CONTENTS 
+	"<a href='http://mensch.org/f90tohtml/'
+	target='bottom_target'>f90tohtml Homepage</a>\n";
+	print CONTENTS
+	"<a href='log.html' target='$top_target'>compilation warnings</a>\n";
+	$the_browser=$dir_html;
+	$the_browser=~s/\/$//;
+	$the_browser=~s/^.*\///;
+	$for_cgi='../'.$the_browser.'/html_code/';
+        if (defined($other_html_url)) {
+	  print CONTENTS
+	  "<a href='$other_html_url' target='index'>$other_html_title</a>\n";
+        }
+}
+sub add_search_engine{
+#add search engine
+        $search_regex='^\s*subroutine\s*c' unless defined($search_regex);
+        $search_files='*/[Cc]*.[Ff]*' unless defined($search_files);
+	print CONTENTS '
+	</pre>
+	<hr>
+	<font color=#990000>search:</font>
+	<form action="../cgi-bin/grepper.cgi" target="index">'.
+	"Enter <a href='http://perldoc.com/perl5.8.0/pod/perlre.html'
+	target='$bottom_target'>regular expression</a>:<br>".
+	'<input name="grep" value="'.$search_regex.'"><br>
+	path:<br> <input name="path" value="'.$search_files.'"><br>
+	<input type="checkbox" name="case" checked>ignore case
+	<input type="checkbox" name="filelist">list files searched<br>
+	<input type="submit" value="search"><br>';
+	print CONTENTS '
+	<input type="hidden" name="address"'." value=$for_cgi><br>
+	</form></html>"
+}
+
+sub put_links_in_code_index {
+    my($heading,$loc,$targ)=@_;
+    my($key,$line,$line2,$totalkeys,$num_key,$howmany,$nspace,$space);
+	$totalkeys=keys(%$loc);
+    if (%$loc){
+        print HFILE "<PRE>\n";
+        print HFILE "<A NAME='$heading'><BR>\n";
+        print HFILE "<B>$heading,</B>\n";
+        print HFILE "<FONT COLOR=\#009900>$totalkeys total</FONT>:<BR>\n";
+        $num_key=0;
+        $howmany="";
+        foreach $key (sort keys %$loc){
+            $num_key++;
+            $nspace=8-length($key);
+            if ($nspace < 2) { $nspace=2 }
+            $space=" " x $nspace;
+			$relloc=&rela($$loc{$key},1);
+            $line= 
+                 "<A href='$relloc#$key'".
+                 " TARGET='$targ'>$key</A>"."$space";
+
+            if ($heading eq "programs") {
+				&plant_tree(\%seq_calls_loc,$key);
+			}
+            if ($heading eq "programs" || &inarray($key,\@more_trees)) {
+				$howmany=$green_ball;
+				$href1="../ind/".$key."\_tree.html";
+				$line.=
+				 "<A href='$href1' target='index'>$green_ball</A>";
+			}	
+			if ($subcalls{$key}){
+				$href1="../call_to/".$key.".html";
+		     	$line.=
+				 "<A href='$href1' target='index'>$subcalls{$key}</A>"
+			}
+			if ($number_calls_from{$key}){
+				$href2="";
+				$href2="../call_from/".$key.".html"; 
+				$line.=
+		     	 ",<A href='$href2' target='index'>$number_calls_from{$key}</A>"
+			}
+
+            print HFILE $line,"\n";
+        }
+        print HFILE "</PRE>\n";
+    }
+}
+#########################################
+sub close_code_index {
+
+    print HFILE "<\/HTML>\n";
+    close (HFILE);
+    print FFILE "<\/HTML>\n";
+    close (FFILE);
+}
+#########################################
+sub convert_html_specials{
+	my($line);
+	foreach $line (@thefile){
+	$line=~s/&/&amp;/g;
+	$line=~s/>/&gt;/g;
+	$line=~s/</&lt;/g;
+	}
+}
+#########################################
+sub tag_it{
+# at $lookfor, leave an address, put
+# a colored bar $htmltag, and store address in $thehash
+$interface=0;
+    my($thehash,$lookfor,$htmltag) = @_;
+	my(@dummy);
+	@dummy=@thefile;
+	@thefile=();
+    foreach $line (@dummy) {
+        $xline=$line;
+        chop($xline);
+        $interface=1 if $xline=~m/^\s*interface/i;
+        $interface=0 if $xline=~m/^\s*end\s+interface/i;
+        if ($interface && ($lookfor ne "interface") ){
+            push @thefile,$line;
+            next;
+        }
+        $xline=~ s/^[c*].*//i if $f77_comment;
+        $xline=~ s/^\#.*//i if $perl_comment;
+        $xline=~ s/!.*// ;
+        $xline=~ s/^format.*|\s+format.*//i;
+        $xline=~ s/'.*//;
+        $xline=~ s/\".*//;
+        $xline=~ s/^\s*end.*$//i;
+#        if ($xline=~ /$lookfor\b/i) {
+        if ($xline=~ /(\b$lookfor\b)\s+\w/i) {
+            $name=$xline;
+            $name=~ s/^.*(\b$lookfor\b)//i; #strip through  $lookfor 
+            $name=~ s/\(.*//g; #strip ( and after
+            $name=~ s/&amp;.*//g; #strip & and after, new 30-3-2003
+            $name=~ s/\s*$//g; #strip all trailing blanks
+            $name=~ s/^\s*//g; #strip all leading blanks
+            $name=~ tr/a-z/A-Z/;#make uppercase
+			if (($lookfor eq "module") and ($name=~m/^PROCEDURE.*/)){
+            	push @thefile,$line;
+				next;
+			}
+			if ($name=~m/\W/ or $name eq "" or $name=~m/\s+/){
+            	push @thefile,$line;
+				print LOG "weird name $name is ignored in $infileName in line:\n  $line";
+				print  "weird name $name is ignored  in $infileName\n";
+				++$warnings;
+				next;
+			}
+			if ($all_loc{$name}) {
+				++$warnings;
+				$relloc=&rela($all_loc{$name},0);
+				$relloc2=&rela($fname,0);
+				print LOG "duplicate for $name:\n",
+				"   $relloc\n",
+				"   $relloc2\n"}
+			$$thehash{$name}=$fname;
+			$all_loc{$name}=$fname;
+			$bgcolor_of_sub{$name}=$bgcolor;
+			$fnamerel=&rela($fname,2);
+            $newline="<A NAME='$name'>".
+            "<A href='$fnamerel\#$name' TARGET='$top_target'>".
+            "$htmltag</A>\n";
+            push @thefile,$newline;
+            push @thefile,$line;
+        }
+        else
+        {
+            push @thefile,$line;
+        }
+    }
+}
+#########################################
+sub link_subroutine_calls{
+# at "call", put link to the called subroutine, leave address of call,
+# store address of call in hashes
+    $interface=0;
+    $insub=$infileName;
+	$title_of_sub{$insub}=$title;
+	$include_num=0;
+    while ($Line=<INFILE>){
+        $interface=1 if $Line=~m/^\s*interface/i;
+        $interface=0 if $Line=~m/^\s*end\s+interface/i;
+	$oneline=0;
+	$theend=0;
+#	 if ($Line=~m/&gt;|&lt;|^!|^[cC]/){
+	 if (($Line=~m/&gt;|&lt;/ and $splitter=~m/;/)
+		or $Line=~m/^!/ or (!defined($splitter)) or ($f77_comment and $Line=~m/^[cC*]/)){
+		@broken=($Line);
+		$oneline=1;
+	 }
+	 else {
+	 @broken= split /($splitter)/, $Line;
+	 }
+#	for (@broken){print '&',"$_",'|';}
+#	print ">>> @broken";
+	 while (scalar(@broken)){
+	 $line=shift(@broken);
+	 $line.=shift(@broken);
+#	print "$line\n";
+		$theend=1 if (!scalar(@broken));
+        $xline= $line;
+		$endofline=substr($xline,-1);
+		$chomped="";
+        $chomped=chop($xline) if $endofline eq ';' or $theend;
+        $xline=~ s/^[c*].*//i if ($f77_comment and ($endofline eq ';' or !defined($splitter) or $oneline));
+        $xline=~ s/^\#.*//i if $perl_comment;
+		$chomped=$&.$chomped if ($xline=~s/!.*//);
+		$cline=$xline;
+		$cline=~s/<.*>//g;
+        $cline=~ s/^\#.*//i;
+		$cline=~s/\s+//g;
+        $xline=~ s/^format.*|\s+format.*//i;
+        $sline=$xline;
+        $sline=~ s/'.*//;
+        $sline=~ s/\".*//;
+        $sline=~ s/^\s*end.*$//i;
+        if ($sline=~ m/(\bsubroutine\b)\s\w/i ||
+            $sline=~ m/(\bprogram\b)\s\w/i    ||
+            ($sline=~ m/(\bmodule\b)\s\w/i &&     
+				!($sline=~ m/module\sprocedure\b/i)) ||
+            $sline=~ m/(\binterface\b)\s\w/i    ||
+            $sline=~ m/(\bfunction\b)\s\w/i  ){
+            $lookfor=$1;
+            $insubx=$sline;
+            $insubx=~ s/^.*$lookfor//i; #strip through  $lookfor 
+            $insubx=~ s/\s+//g;         #strip all blanks
+            $insubx=~ s/\(.*//g;        #strip ( and after
+            $insubx=~ s/&amp;.*//g; #strip & and after, new 30-3-2003
+            $insubx=~ tr/a-z/A-Z/;      #make uppercase
+			if (defined($all_loc{$insubx}) && $interface==0 ){
+				$insub=$insubx;
+				$title_of_sub{$insub}=$title;
+			}
+        }
+		if (defined($all_loc{$insub})){
+			++$linecount{$insub} if $cline;
+			$charcount{$insub}+=length($cline);
+		}
+        if ($xline=~ m/$include_match/i) {
+			if ($xline=~m/$include_file_match/){
+				$include_num++;
+				$before=$`;
+				$middle=$&;
+				$after=$';
+				$m1=$1;
+				$m2=$2;
+				$m3=$3;
+	            $xxx=$2;
+				$xxx=~s/\s*//g;
+				$xxx=~s/^.*\///;
+				$k=$xxx;
+	            $thecall=$fname."\#"."$k\_$include_num";
+	            push @{$call_loc{$k}},"$thecall $insub";
+	            $the_call_string='<A NAME="'."$k\_$include_num".'">';
+				if ($put_includes_in_tree == 1) {
+				    push @{$seq_calls_loc{$insub}},$thecall;
+				}
+				#$xxx=~s/\..*$/\.html/;
+				$xxx.=".html";
+				$include_loc="../../html_code/include/$xxx";
+				$xline=~m/$xxx/i;
+	            $locinsub=$all_loc{$insub}."\#".$insub;
+				$vrel=&rela($v,2);
+				$locinsubrel=&rela($locinsub,2);
+	            $newline=
+				$before.$m1.
+				"<A href='$include_loc'>$m2</A>".$m3.
+				$after.$the_call_string.
+	            "<A href='$locinsubrel' TARGET='$bottom_target'>$cyan_ball</a>$chomped";
+				$line=$newline;
+			    }
+        }	
+		$foundF="";
+		$foundFF="";
+		$before="";
+		$after="";
+		if ($function_prefix){ 
+		if ($xline=~/(^.*)($function_prefix\w*)(\s*(\(|&amp;).*$)/i){
+			 if ($1!~m/function/i){
+				$before=$1;
+				$foundF=$2;
+				$after=$3.$'
+				}		
+		}
+		}
+		else{
+		if ($aggressive){
+			if ($xline=~/(^.*[=,\*\/\+\-\(]\s*)(\w+)(\s*\(.*$)/){
+				$before=$1;
+				$foundFF=$2;
+				$after=$3.$';
+			}
+			if (not $foundFF and  $xline=~/(^\s*)(\w+)(\s*\(.*$)/){
+				$before=$1;
+				$foundFF=$2;
+				$after=$3.$';
+			}
+			if (not $foundFF and $xline=~/(^.*[^n^N]\s+)(\w+)(\s*\(.*$)/){
+				$before=$1;
+				$foundFF=$2;
+				$after=$3.$';
+			}
+		}
+		else{
+			if ($xline=~/(^.*=\s*)(\w+)(\(.*$)/){
+				$before=$1;
+				$foundFF=$2;
+				$after=$3.$';
+			}
+		}	
+		if ($foundFF){
+            $foundFFtr = $foundFF;
+            $foundFFtr =~tr/a-z/A-Z/;
+			for $k (keys %all_fun_loc){
+				$foundF=$foundFF if $k eq $foundFFtr;
+			} 
+		}
+		}
+		if ($foundF && $verbose) {print "found function call:$foundF in $insub\n"}
+        if ($xline=~ m/^.+(\s+|\))call|^\s*call|^\s*use/i or $foundF ) {
+            $xxx=$';
+			$xxx=$foundF if $foundF;
+            $xxx=~ s/\(.*|,.*|&amp;.*//g;
+            $xxx=~ s/\s+//g;
+            $xxx=~ tr/a-z/A-Z/;
+            foreach $k (keys %all_sub_loc) {
+                if ($k eq $xxx) {
+            push @{$called_subs{$insub}},$xxx;
+                    $v=$all_sub_loc{$k};
+                    @junk=@{$call_loc{$k}};
+                    $numref=@junk+1;
+                    $thecall=$fname."\#"."$k\_$numref";
+                    push @{$call_loc{$k}},"$thecall $insub";
+					if (! ($xline=~m/^\s*use/i) || ($put_modules_in_tree == 1)) {
+				    	push @{$seq_calls_loc{$insub}},$thecall;
+					}
+                    $the_call_string='<A NAME="'."$k\_$numref".'">';
+                    $locinsub=$all_loc{$insub}."\#".$insub;
+					if ($foundF){
+					$match=$foundF;
+					}
+					else{
+					$xline=~m/(call\s+|use\s+)($xxx)/i;
+					$match=$2;
+					$before=$`.$1;
+					$after=$';
+					}
+					$vrel=&rela($v,2);
+					$locinsubrel=&rela($locinsub,2);
+                    $newline=
+					$before.
+					"<A href='$vrel#$k'>$match</A>".
+            		"<A href='$locinsubrel' TARGET='$bottom_target'>$cyan_ball</a>".
+					$the_call_string.
+					$after.
+					$chomped;
+					$line=$newline;
+					last;
+                }
+            }	
+            print OUTFILE $line; 
+        } 
+        elsif ($xline=~ m/^\s*module\s*procedure/i) {
+			$newline="";
+			$preline=$`.$&;
+            $manyxxx=$';
+	 		@segments= split /,/, $manyxxx;
+			print "module procedure list: @segments \n";
+			foreach $xxx (@segments){
+				$xxx=~s/\s//g;
+	            $xxx =~ tr/a-z/A-Z/;
+				push @{$called_subs{$insub}},$xxx;
+	            foreach $k (keys %all_sub_loc) {
+	                if ($k eq $xxx) {
+	                    $v=$all_sub_loc{$k};
+	                    @junk=@{$call_loc{$k}};
+	                    $numref=@junk+1;
+	                    $thecall=$fname."\#"."$k\_$numref";
+	                    push @{$call_loc{$k}},"$thecall $insub";
+					    push @{$seq_calls_loc{$insub}},$thecall;
+	                    $the_call_string='<A NAME="'."$k\_$numref".'">';
+	                    $locinsub=$all_loc{$insub}."\#".$insub;
+						$xline=~m/$xxx/i;
+						$vrel=&rela($v,2);
+						$locinsubrel=&rela($locinsub,2);
+	                    $newline.=
+						" <A href='$vrel#$k'>$&</A>".
+						$the_call_string.
+	                    "<A href='$locinsubrel' TARGET='$bottom_target'>$cyan_ball</a>,";
+					}
+                }
+            }	
+			chop($newline);
+			$line=$preline.$newline.$chomped;
+            print OUTFILE $line; 
+        } 
+        else
+        {
+            print OUTFILE $line;
+        } #xline
+	 }#broken lines
+    }#line
+}
+#########################################
+sub link_back_to_calls{
+#at "subroutine" in code, put links to calls_to and calls_from
+	my($howmany);
+        $interface=0;
+    $lookfor= '\bprogram\b|\bsubroutine\b|\binterface\b|\bfunction\b|\bmodule\b|^include file\:';
+	$ln=0;
+    LINE: while ($line=<INFILE>){
+		$ln++;
+        $interface=2 if $interface==1; #Brian fixed this 2-11-2003
+        $interface=1 if $line=~m/^\s*interface/i;
+        $interface=0 if $line=~m/^\s*end\s+interface/i;
+        $sline=$line;
+        $xline=$sline;
+        chop($xline);
+        $xline=~ s/^[c*].*$//i if $f77_comment; 
+        $xline=~ s/^\#.*//i if $perl_comment;
+        $xline=~ s/^format.*|\s+format.*//i;
+        $xline=~ s/!.*//;
+        $xline=~ s/'.*//;
+        $xline=~ s/\".*//;
+        $xline=~ s/^\s*end.*$//i;
+        if ($xline=~ /($lookfor)(\s+\w.*)/i && $interface!=2) {
+			$thematch=$1;
+			$name=$2;
+            $name=~ s/\s+//g; #strip all blanks
+            $name=~ s/\(.*//g; #strip ( and after
+            $name=~ s/&amp;.*//g; #strip & and after, new 30-3-2003
+            $name=~ tr/a-z/A-Z/ if ($thematch!~m/include file\:/);#make uppercase
+#			if ($thematch=~/\.inc|\.h/) {
+#				$name=$thematch;
+#			}
+			if (($thematch eq "module") and ($name=~m/^PROCEDURE.*/)){
+				$line=~s/$/<a name='$ln'>/;
+            	print OUTFILE $line;
+				next LINE;
+			}
+			if (! defined($all_loc{$name})){
+				++$warnings;
+				print "weird not defined: $name in \n   $line";
+				$line=~s/$/<a name='$ln'>/;
+            	print OUTFILE $line;
+				next LINE;
+			}
+            @therefs=@{$call_loc{$name}};
+            $howmany=@therefs;
+            &open_call_to_file($name,$howmany);	
+            $subcalls{$name}=$howmany;
+            foreach $ref2 (@therefs){
+                ($ref,$insub)=split /\s+/, $ref2;		
+                $ref=~ m/\_\d+$/;
+                $num=$&;
+                $num=~ s/\_//;
+				$refrel=&rela($ref,1);
+                $link="<A href='$refrel' TARGET='$top_target'>$insub</A>";
+                print CALLTO "$link\n";
+            }
+			$back="";
+            if ($howmany>0) {
+				$relloc=&rela($call_to_file,2);
+                $back=" <A href='$relloc' TARGET='index'>$howmany</A>";
+            }
+			$call_from_file=$call_to_file;
+			$call_from_file=~s/call_to/call_from/;
+			$relloc=&rela($call_from_file,2);
+            if ($number_calls_from{$name}) {
+                $back.=",<A href='$relloc' TARGET='index'>$number_calls_from{$name}</A>";
+            }
+                        $xline=$line;
+                        chomp $xline;
+			$xline=~m/($thematch\s*)($name)/i;
+			$newline=$`."<font color=\#993300>".$1."</font>".
+			"<font color=\#cc0000>$2</font>".
+			$'.
+			$back."\n";
+			$line=$newline;
+            close (CALLTO);	
+        }
+		$line=~s/$/<a name='$ln'>/;
+        print OUTFILE $line;
+    }
+}
+#########################################
+sub add_line_number{
+	$ln=0;
+    while ($line=<INFILE>){
+		$ln++;
+		$line=~s/$/<a name='$ln'>/;
+        print OUTFILE $line;
+    }
+}
+#########################################
+sub open_infile_and_outfile {
+	my ($name);
+    chomp($infile);
+	$infile=~s/^.*\///;
+	$suffix=$infile;
+	$suffix=~s/^.*\.//;
+	$f77_comment=1;
+	if (defined($c_comment)) {$f77_comment=$c_comment}
+	if ($suffix=~m/f90/i) {$f77_comment=0}
+	$infileName=$infile;
+	$infile.=".html";
+	$assume="";
+	$assume=', c is comment' if $f77_comment;
+    print "opening $infile for $doing_what $assume\n" if $verbose;
+	$indir=$dir_html."html_code/"."$title/";
+	$infile=$indir.$infile;
+    open(INFILE,$infile) or
+        die ("cannot open the input html_code file $infile");
+    $outfile=$infile.".temp";
+    open(OUTFILE,">$outfile") or
+        die ("cannot open the output temp file $outfile"); 
+    $fname=$infile;
+    $fname=~ s/\s+//g;
+}
+#########################################
+sub open_call_to_file {
+
+    my ($tag,$howmany)=@_;
+	my ($theref,$dummy);
+	if ($tag=~m/[^a-zA-Z0-9_.]/){
+		++$warnings;
+		print "weird for call_to_file: $tag\n";
+		return
+	}
+    $call_to_file=$dir_html."call_to/".$tag.".html";
+    $dummy=$dir_html."call_to/"."UNKNOWN".".html";
+    open(CALLTO,">$call_to_file") or
+        (open (CALLTO,">$dummy")) or die ("no way to way to open $dummy");
+    print CALLTO "<HTML>\n";
+    print CALLTO "<HEAD>\n";
+    print CALLTO "<TITLE>"."$tag calls"."</TITLE>";
+    print CALLTO "<A NAME=\"TOP\">\n";
+    print CALLTO "<\/HEAD>\n";
+    print CALLTO "<BODY BGCOLOR=$bgcolor ".
+		"LINK=$linkcolor VLINK=$vlinkcolor ALINK=$alinkcolor >\n";
+	$relloc=&rela($all_loc{$tag},1);
+	$theref="<A href='$relloc#$tag' target='$bottom_target'>$tag</A>";		
+    print CALLTO "<FONT COLOR=#009900>$howmany calls to<BR>$theref</FONT><P>";
+	print CALLTO "<PRE>\n";
+}
+#########################################
+sub close_files_and_rename{
+    close(INFILE);
+    close(OUTFILE);
+    rename ($outfile, $infile );
+}
+#########################################
+sub set_html_tags{
+
+	$bgcolor="#ffffff";
+    $linkcolor   ="#0000aa";
+    $vlinkcolor  ="#0000ff";
+    $alinkcolor  ="#ff0000";
+    $bottom_target="bottom_target";
+    $top_target="top_target";
+    $red_bar=&gifwrap("bar_red.gif",2);
+    $yellow_bar=&gifwrap("bar_yellow.gif",2);
+    $green_bar=&gifwrap("bar_green.gif",2);
+    $purple_bar=&gifwrap("bar_purple.gif",2);
+    $grey_bar=&gifwrap("bar_grey.gif",2);
+	$red_ball=&gifwrap("red.gif",2);
+	$green_ball=&gifwrap("green.gif",1);
+	$cyan_ball=&gifwrap("cyan.gif",2);
+}
+#########################################
+sub gifwrap{
+    my($giftag,$deep) = @_;
+	my($gif_start,$gif_end);
+	$prefix="../" x $deep;
+    $gif_start='<IMG SRC="'.$prefix."gif/";
+    $gif_end='" border=0>';
+    return $gif_start.$giftag.$gif_end;
+}
+
+#########################################
+sub open_config_file{
+
+    if (@ARGV == 0) {
+        print "enter filename with list of files to process: ";
+        $config_file = <STDIN>;
+        chomp($config_file);
+    }
+    else
+    {
+        $config_file=$ARGV[0]
+    }
+    until (-e $config_file){
+        print "$config_file does not exist ... enter again:";
+        $config_file = <STDIN>;
+        chomp($config_file);
+    }
+	print "using $config_file\n";
+	open(CONFIG,$config_file) or
+	    die ("cannot open the config file $config_file");
+	@the_config_file=<CONFIG>;
+	@titles=();
+	$str="";
+	$first_line=$the_config_file[0];
+	($first_line=~m/f90tohtml\sinput\sfile/i) ||
+		die ("not an input file, first line is:\n $first_line");
+	foreach $line (@the_config_file){
+		$str.=$line;
+	}
+	eval $str;
+	foreach $key (@more_trees){
+		$key=~s/\s//g;
+		$key=~ tr/a-z/A-Z/
+	}
+	foreach $key (@not_on_tree){
+		$key=~s/\s//g;
+		$key=~ tr/a-z/A-Z/
+	}
+    $default_prog=~ tr/a-z/A-Z/;
+}
+######################################################
+sub copy_to_html{
+	$doing_what="copying HTML";
+	foreach $infile (@allfiles){
+	chomp($infile);
+	$outfile=$infile;
+	$outfile=~s/^.*\///;
+	$outfile.=".html";
+	$outdir=$dir_html."html_code/"."$title/";
+	mkdir($outdir,0755) if (! -e $outdir);
+	$outfile=$outdir.$outfile;
+	system("cp $infile $outfile");
+    print "copy $infile to\n $outfile \n"  if $verbose;
+	}
+}
+################################
+sub colorize_comments{
+    while ($line=<INFILE>){
+		$line=~s+(\!.*$)+<font color=$comment_color>$1</font>+;
+		$line=~s+(^[cC*].*$)+<font color=$comment_color>$1</font>+ if $f77_comment;
+        print OUTFILE $line;
+    }
+}
+
+#########################################################
+sub make_legend{
+open(LEGEND,">$dir_html"."legend.html") ;
+$yellowBar=&gifwrap('bar_yellow.gif',0);
+$redBar=&gifwrap('bar_red.gif',0);
+$greenBar=&gifwrap('bar_green.gif',0);
+$purpleBar=&gifwrap('bar_purple.gif',0);
+$greyBar=&gifwrap('bar_grey.gif',0);
+$greenBall=&gifwrap('green.gif',0);
+$cyanBall=&gifwrap('cyan.gif',0);
+print LEGEND
+"<html>
+<body>
+<center>
+<h2>Legend (what the little gifs mean/do)</h2>
+<table border=10><tr><td>
+program (click duplicates in top window)<br>
+$yellowBar
+</td></tr><tr><td>
+subroutine (click duplicates in top window)<br>
+$redBar
+</td></tr><tr><td>
+function (click duplicates in top window)<br>
+$greenBar
+</td></tr><tr><td>
+module (click duplicates in top window)<br>
+$purpleBar
+</td></tr><tr><td>
+include file (click duplicates in top window)<br>
+$greyBar
+</td></tr><tr><td>
+a tree starts here (click)<br>
+$greenBall
+</td></tr><tr><td>
+click to open the program unit this is calling <em>from<em><br>
+$cyanBall
+</td></tr></table>
+</center>
+</body>
+</html>
+"
+}
+###################################################
+sub make_stats{
+my($fname,$sortway)=@_;
+format STATS =
+@<<<<<<<<<<<<<<<<<< @>>>>>>> @>>>>>>>>>>
+$key, $nlines, $nchars
+.
+sub biggestval {$charcount{$b} <=> $charcount{$a}}
+sub asciibetically {$a cmp $b}
+open(STATS,">$dir_html"."$fname") ;
+print STATS "<html><body><pre>\n";
+$grandlines=0;
+$grandchars=0;
+foreach $title (@titles){
+	($key,$nlines,$nchars)=("$title procedures",'lines','characters');
+	write STATS;
+	print STATS '________________________________________',"\n";
+	$totlines=0;
+	$totchars=0;
+	foreach $key (sort $sortway keys %linecount){
+		if ($title eq $title_of_sub{$key}){
+			$nlines=$linecount{$key};
+			$nchars=$charcount{$key};
+			$totlines+=$nlines;
+			$totchars+=$nchars;
+			write STATS;
+		}
+	}
+	print STATS '________________________________________',"\n";
+	($key,$nlines,$nchars)=("$title TOTAL",$totlines,$totchars);
+	write STATS;
+	print STATS '########################################',"\n\n\n";
+	$grandlines+=$totlines;
+	$grandchars+=$totchars;
+}
+($key,$nlines,$nchars)=("TOTAL",$grandlines,$grandchars);
+write STATS;
+print STATS "</pre></body></html>\n";
+print "made $fname \n";
+}
+
+

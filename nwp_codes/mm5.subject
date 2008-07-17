@@ -1,0 +1,58 @@
+author: Rafal Jabrzemski
+
+advection;bc;conadv
+advection;bc;conmas
+advection;horizonatal;hadv
+advection;vertical;vadv
+
+cumulus parameterization;Grell;cup
+cumulus parameterization;Arakawa-Schubert;cupara3
+
+boundary layer;Bulk formula;blkpbl 
+boundary layer;Blackadar scheme;hirpbl
+boundary layer;Burk-Thompson 
+boundary layer;MRF scheme (Hong and Pan 1996)
+boundary layer;ground temp;slab
+
+boundary conditions;coarse;bdyin
+boundary conditions;nested;bdyovl1
+boundary conditions;u v;bdyuv
+boundary conditions;water;bdyval
+boundary conditions;feedback;feedbk
+boundary conditions;relaxation bc local tendency;nudge
+
+convection;dry;cadjmx
+
+diffusion;u&v;diffu
+diffusion;T;diffut
+
+grid;interpolate;sintx
+grid;interpolate;sinty
+grid;nest;stotndt
+grid;nest;stotndi
+grid;nest;subch
+
+initialization;coarse-grid;init
+initialization;nested-grid;initnest
+initialization;restart;initsav
+initialization;read;rdinit
+initialization;write;savread
+
+microphysics;moisture tendency (Hsie);exmoiss
+
+radiation;main;
+radiation;cloud;
+radiation;simple cooling;
+radiation;Dudhia's short&long wave;
+radiation;NCAR/CCM2 radiation scheme;
+radiation;longwave;lwrad
+radiation;shortwave;swrad
+radiation;surface short&long;sfcrad
+
+utility;smoother-desmoother;smther
+utility;colar declination;solar1
+utility;prognostic tendencies;solve3
+utility;soundwaves;sound
+utility;sponge;sponge
+utility;total mass of air&water;tmass
+utility;lookup transmissivity;transm

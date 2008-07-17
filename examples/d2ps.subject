@@ -1,0 +1,5 @@
+grid;rectangular;im_plot
+grid;irreqular;pixel_plot
+contour;in grid square;square_con
+contour;main;cplot
+color tables;;colors

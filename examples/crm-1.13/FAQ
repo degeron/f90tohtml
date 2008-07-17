@@ -1,0 +1,51 @@
+This is the Frequently Asked Questions (FAQ) list for the NCAR CCM
+Column Radiation Model, hereafter CRM. Please read this file before
+sending questions to the CRM maintainers.
+
+Frequently asked questions:
+1. Why is the cloud forcing non-zero for clear sky simulations?
+2. How can I easily compare the results of multiple CRM runs?
+3. How do I run the CRM in double precision?
+
+Answers to frequently asked questions:
+1. Why is the cloud forcing non-zero for clear sky simulations?
+
+Even when the cloud fraction is 0.0 the clear sky routines are still
+invoked to compute the "clear sky" flux profile, even though the full,
+all sky routines have actually just computed a "cloudy sky" flux
+profile (albeit with 0% cloud). The cloud forcing is the difference of
+these "clear" and "cloudy" profiles. Since the clear sky routines
+(e.g. radclr.F) contain different (cruder but more efficient) physics 
+parameterizations, they do not give the same answers as the full,
+all sky routines run with 0.0% cloud. Thus their difference, the
+diagnosed cloud forcing, is non-zero for 0% cloud. It is important to
+note that these approximations never affect the CCM physics because
+the "clear sky" fluxes are only used for diagnostic purposes (i.e.,
+computing cloud forcing).
+
+This was a design decision made for CCM2. For diagnostic purposes it
+is less desirable to have a step function jump in the cloud forcing as
+the sky approaches 0% cloud cover, than to have a slightly incorrect
+but smooth asymptotic limit (~2 W/m2 instead of 0 W/m2).
+
+2. How can I easily compare the results of multiple CRM runs?
+If all the text output files are named `*.out' then you can summarize
+specific fields in the printed output by using a one line Perl
+commmand. This example prints the TOA SW cloud forcing from all the
+files: 
+
+/contrib/bin/perl -n -e 'if(/SW cloud forcing TOA/){print $ARGV.": ".$_;}' *.out
+
+3. How do I run the CRM in double precision?
+First, you must compile the CRM in double precision.
+Most Fortran compilers allow you to do this with a command line
+argument to the compiler. For example, if you are using Sun f77 the
+appropriate switches to f77 are '-r8 -i4'. If you are using the NETCDF
+option (which generates a netCDF output file), you must also specify
+the '-DDOUBLE' option to the compiler. This will define the
+pre-processor token DOUBLE which is used by netcdf.F to determine what
+precision the output file will be. Not defining DOUBLE with the double
+precision CRM, or defining DOUBLE with the single precision (default)
+CRM will produce garbage in the netCDF output file.
+
+End of CRM FAQ

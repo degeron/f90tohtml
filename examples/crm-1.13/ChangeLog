@@ -1,0 +1,49 @@
+Wed Mar 11 08:47:06 1998  Charlie Zender  <zender@odin.cgd.ucar.edu>
+
+	* Changed criterion for printing out SWCF ratio so that now ratio
+	is printed whenever SWCF(TOA) != 0.
+
+Fri Mar  6 11:44:13 1998  Charlie Zender  <zender@odin.cgd.ucar.edu>
+
+	* Added FAQ to distribution
+
+	* Added '-DDOUBLE' precision option to produce a double precision
+	netCDF output file. '-DDOUBLE' should be specified whenever
+	compiling the CRM with '-r8 -i4'-type promotion. 
+
+Mon Mar  2 22:33:39 1998  Charlie Zender  <zender@odin.cgd.ucar.edu>
+
+	* Announced release of CRM version 1.13
+
+Thu Feb 19 15:08:12 1998  Charlie Zender  <zender@odin.cgd.ucar.edu>
+
+	* Installed Surface Radiation Budget (SRB) module and common
+	block. Cleaned up and reformatted output. 
+
+Mon Nov  3 14:33:35 1997  Charlie Zender  <zender@odin.cgd.ucar.edu>
+
+	* Unannounced release of CRM version 1.12
+
+	* Probably a netCDF3 vs. netCDF2 related bug appeared in ncvptg()
+	in netcdf.F. Work around has been to define plon=plond=PLON=1 in 
+	pmgrid.h and prgrid.h and use ncvpt() output routine instead.
+	This has side effect of reducing most array sizes by a factor of
+	four. Unfortunately, pmgrid.h and prgrid.h must now be maintained
+	outside the default CCM source tree.
+
+	* Starting this ChangeLog for the CRM. Everything before this
+	entry has been merged in by hand.
+	
+Wed Jul 16 12:53:10 1997  Charlie Zender  <zender@odin.cgd.ucar.edu>
+
+	* Announced release of CRM version 1.11
+
+        * Imposed aerosol extinction optical depth has been changed from
+          0.12 to 0.14 in aermix.F. This resolves an inconsistancy between
+          the CRM and CCM3.
+
+Mon Jan 13 22:52:55 1997  Charlie Zender  <zender@odin.cgd.ucar.edu>
+
+	* Announced Web page availability of CRM version 1.10 at CSM
+	Atmospheric model working group meeting in Boulder.
+
