@@ -1,0 +1,142 @@
+author: Rafal Jabrzemski
+
+advection;u;advu
+advection;v;advv
+advection;w;advw
+advection;p;advp
+advection;theta;advpt
+advection;water&ice;advq
+advection;TKE;advcts
+advection;buoyancy;buoytke
+
+cumulus parameterization;Kuo;kuocp
+cumulus parameterization;Kain-Fritsch;kfpara
+cumulus parameterization;Kain-Fritsch;kfinterfc
+
+diffusion;scalars;tmixpt
+diffusion;scalars;tmixq
+diffusion;scalars;tmixqv
+diffusion;TKE;tmixq
+diffusion;u;tmixuvw
+diffusion;v;tmixuvw
+diffusion;theta;tmixpt
+diffusion;numerical2;cmix2uvw
+diffusion;numerical2;cmix2s
+diffusion;numerical4;cmix4uvw
+diffusion;numerical4;cmix4s
+diffusion;Rayleigh dumping;rdmpuvw
+diffusion;Rayleigh dumping;rdmppt
+diffusion;mixing;mixuvw
+diffusion;mixing;mixpt
+diffusion;mixing;mixqv
+diffusion;mixing;mixq
+diffusion;mixing;
+
+integration;main;tinteg
+integration;main;cordintg
+integration;momentum equation;frcuvw
+integration;turbulent KE;solvtke
+integration;pressure;frcp
+integration;potential temperature;frcpt
+integration;0&gravity modes;smlstep
+integration;0&gravity modes momentum equation;solvuv
+integration;acoustic&gravity modes vertical momentum explicit;solvwpex
+integration;acoustic&gravity modes vertical momentum implicit;solvwpim
+integration;acoustic&gravity modes potential temperature;solvpt_lrg
+integration;acoustic&gravity modes potential temperature;solvpt_sml
+integration;water vapor;solvqv
+integration;water substance;solvq
+
+micro-physics;Kessler warm rain;microph
+micro-physics;auto-conversion;autocac
+micro-physics;evaporation;revap
+micro-physics;fall-out;qrfall
+micro-physics;adjustment;satadj
+micro-physics;ice;microph_ice
+micro-physics;constants;stcstice
+micro-physics;conversion;icecvt
+micro-physics;fall-out;qhfall
+
+momentum equation;main;frcuvw
+momentum equation;mixing;mixuvw
+momentum equation;advection;advuvw
+momentum equation;coriolis;coriol
+momentum equation;buoyancy;buoycy
+momentum equation;external BC;brlxuvw
+momentum equation;external BC;brlxp
+momentum equation;external BC;brlxpt
+momentum equation;external BC;brlxq
+momentum equation;external BC;brlxs
+momentum equation;external BC;bcq
+momentum equation;external BC;bckmkh
+
+radiation;main;radiation
+radiation;short wave;sorad
+radiation;long wave;irrad
+
+surface physics;main;sfcflx
+surface physics;surface fluxes;sfcflxsd
+surface physics;energy budget;soilebm
+surface physics;diagnostics;soildiag
+
+utilities;initialization;initpara
+utilities;initialization;initial
+utilities;initialization;init0
+utilities;initialization;inibase
+utilities;initialization;INITGRDVAR
+utilities;initialization;inigrd
+utilities;initialization;initdvr
+utilities;initialization;zprofil
+utilities;initialization;soundg
+utilities;initialization;sndintrp
+utilities;initialization;inte1d
+utilities;initialization;extinit
+utilities;initialization;dtaread
+utilities;initialization;binread
+utilities;initialization;bn2read
+utilities;initialization;hdfread
+utilities;initialization;pakread
+utilities;initialization;gribread
+utilities;grid;setgrd
+utilities;grid;setmapr
+utilities;grid;lltoxy
+utilities;grid;setorig
+utilities;grid;xytoll
+utilities;grid;lltoxy
+utilities;grid;setcornerll
+utilities;grid;xytomf
+utilities;grid;strhgrd
+utilities;grid;ddrotuv
+utilities;grid;adjuvmv
+utilities;grid;galilei
+utilities;grid;energy
+utilities;BC;bcs2d
+utilities;BC;bcsclr
+utilities;BC;bcsu
+utilities;BC;bcsv
+utilities;restart;rstin
+utilities;compress;cmprs
+utilities;uncompress;uncmprs
+utilities;decode;dcdlabel
+utilities;decode;dcdchar
+utilities;decode;dcdreal
+utilities;decode;unpkdat
+utilities;history;rdhishd
+utilities;history;ibm2flt
+utilities;IGDS;mkigds
+utilities;Jacobian;jacob
+utilities;copy;cpyary3d
+utilities;vapor;getqvs
+utilities;terrain;readtrn
+utilities;maxmin values;a3dmax0
+utilities;maxmin values;maxmin
+utilities;pointers;setexbcptr
+utilities;average;avgz
+utilities;average;avgx
+utilities;average;avgy
+utilities;average;avgsu
+utilities;average;avgsv
+utilities;average;rhouvw
+utilities;random;ranary
+utilities;element_wise product;aamult
+utilities;surface processes diagnostics;soildiag

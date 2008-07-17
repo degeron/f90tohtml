@@ -1,0 +1,142 @@
+$Header: /home/zender/crm/RCS/INSTALL,v 1.1 1997/01/02 00:51:23 zender Exp zender $
+
+CCM3 Column Radiation Model (CRM) Installation Guide
+
+The contents of the required files are as follows:
+INSTALL		This file
+README		description of the CRM
+FAQ		Frequently asked questions about the CRM
+ChangeLog	chronological log describing all changes and updates to the CRM
+params.h	#defines's for vertical resolution, machine type, and netCDF option
+crmsrb.h	Surface Radiation Budget common block 
+crm.F		CRM top level routine (has more detailed documentation too)
+netcdf.F	netCDF routines
+mls_clr.in	Sample input thermodynamic profile for Mid-Latitude Summer, clear sky
+mls_clr.out	Sample output from running CRM with mls_clr.in as input
+mls_cld.in	Sample input thermodynamic profile for Mid-Latitude Summer, with clouds
+mls_cld.out	Sample output from running CRM with mls_cld.in as input
+crm.nc		Sample ouput netCDF file
+pvmgetarch	Script used by Makefile to determine your native machine type
+Makefile	Makefile used by GNU make to create CRM executable
+		NB: Makefile requires GNU make and (probably) some editing on your part!
+...		The remainder of the required routines are self-documented CCM code
+
+First you should read the "General Installation Instructions", then
+proceed to "Installing the CRM". Following the installation
+instructions is a description of how to run the code, differences from
+the CCM2 column radiation model, and a short description of the input
+and output file formats.
+
+########################################################################
+General Installation Instructions
+########################################################################
+
+The only machine architectures CRM is able to support are those
+supported by the CCM code on which CRM depends. The currently
+supported architectures are the Sun, IBM and Cray flavors of UNIX.  If
+your machine type is not supported (e.g., SGI), see the note on
+non-standard architectures at the bottom of this README file for
+installation hints.  
+
+########################################################################
+Installing the CRM:
+########################################################################
+1. Copy the CRM compressed tarfile to the parent of the installation directory.
+   The following instructions will install the source code in /home/user/crm-1.13. 
+   Substitute your choice for the installation directory for `/home/user' in the following.
+mv crm-1.13.tar.gz /home/user
+
+2. Move to the same directory as the distribution file
+cd /home/user
+
+3. Uncompress and untar the source code. 
+   By default, this installs the CRM source code in a subdirectory called crm-1.13.
+   This directory will be created if it does not exist.
+gtar -xvzf crm-1.13.tar.gz
+or
+uncompress crm-1.13.tar.gz
+tar -xvf crm-1.13.tar
+
+4. Move to the same directory as the top level source (crm.F)
+cd crm-1.13
+
+4b. Typing `make' at this point just might work. If it doesn't, you can execute
+   the following manual instructions, or edit the Makefile to suit your environment.
+   NB: The `Makefile' only works with GNU make.
+
+5. Determine the preprocessor token corresponding to your machine type.
+   One of the following three valid tokens must be defined at CRM compile time:
+   SUN, CRAY, or RS6K.	Note RS6K is used for the IBM RS6000 computer.
+   The token may be defined on the compile line (e.g., with -DSUN, as shown in 
+   the next step), or simply uncommented in the params.h file (not shown). 
+   Be sure only one of SUN, CRAY, and RS6K is defined.		
+
+6. Compile the CRM. The following commands work on Sun systems. Adjust these
+   according to your machine type.	 
+6a. Single precision (-Nl40 option is only necessary on Suns, -e allows 132 column input)
+    f77 -DSUN -I./ -I./src -O -e -Nl40 -o crm crm.F
+6b. Double precision
+    f77 -DSUN -I./ -I./src -O -e -Nl40 -r8 -i4 -o crm crm.F
+6c. Single precision with netCDF (Replace $NETCDF_ROOT with the correct path for your netCDF installation)
+    (netCDF software is freely available from http://www.unidata.ucar.edu/packages/netcdf)
+    (double precision netCDF output is unsupported)
+    f77 -DSUN -I./ -I./src -O -e -Nl40 -DNETCDF -I$NETCDF_ROOT/include -o crm crm.F -L$NETCDF_ROOT/lib -lnetcdf -lnsl
+
+7. Run the CRM 
+./crm < mls_clr.in
+
+8. Validate your CRM against the supplied radiation profile. The supplied 
+profile was created on a Sun Solaris system running in single precision 
+(differences with your answers should be within machine precision).
+./crm < mls_clr.in > tst_clr.out
+diff tst_clr.out mls_clr.out | more
+./crm < mls_cld.in > tst_cld.out
+diff tst_cld.out mls_cld.out | more
+
+9. You are done.
+
+########################################################################
+Notes on Model I/O
+########################################################################
+
+For references to articles in the scientific literature which describe
+the radiative transfer methods, see comments in routine radcsw() for
+the shortwave, and radclw() for the longwave.  The sample input file
+mls.in was condensed from the ICRCCM Mid-Latitude Summer profile. It
+is a simple text input file which you can edit to change the
+thermodynamic initial conditions, see the documentation in mls.in for
+a full description of the inputs.
+
+Nothing in the input file style has changed from the CCM2 version of
+the CRM.  What's new is the use of the params.h file a la CCM3---
+change vertical resolution by editing PLEV and PLEVR (they must be the
+same).  Most of the source code is intended to be #included directly
+from the CCM3 source library. radctl() is the only routine from the
+CCM that had to be hacked for the CRM; the sections of radctl() which
+differ from the CCM3 calling structure are bracketed by c++csz and
+c--csz.
+
+The text output has been expanded from the CCM2 CRM to include the net
+heating rate and the cloud particle sizes and ice fraction. Also, IEEE
+handling has been added to the SUN version.  There is a compile-time
+option to create a netCDF file of the output in addition to the usual
+text file. The contents of the netCDF output file "crm.nc" are mostly
+identical with the textual output, with perhaps a few additions. The
+variable names (and units) in the netCDF output file "crm.nc" are
+currently the same as the variable names in the top-level routine
+crm(), i.e., as they would appear in tphysbc() in the CCM. Because of
+this the moisture field, e.g., is named qm1 rather than just plain
+q. However, the "long_name" attribute of each variable is a concise
+description of the variable, and the "units" attribute contains the
+units of the variable.
+
+########################################################################
+Non-supported Machine Architecture Installation Hints
+########################################################################
+
+The file you most likely will need to edit is crm.F. Both calls to
+ieee_handler() in the top level crm.F should be commented out, because
+the supplied IEEE error handling routine is for SUN architectures
+only. This fix alone will be sufficient for many machines, and has
+been tested for SGIs.
+

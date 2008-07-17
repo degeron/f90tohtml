@@ -1,0 +1,74 @@
+-----------------------------------------------------------------
+ mid-latitude summer profile for CCM3 Column Radiation Model 
+-----------------------------------------------------------------
+   83.33            day of year (1=jan 1; from 1 to 365)
+   0.           latitude    (from +90 to -90)
+  level   p(mb)    t(k)   h2ommr (g/g) o3mmr (g/g) cld cvr  cld lwp (g/m2)
+    18    2.026    267.03   4.000e-06  7.500e-06  0.000e+00 0.000e+00 
+    17    5.470    248.22   4.000e-06  9.800e-06  0.000e+00 0.000e+00 
+    16   15.296    231.98   4.000e-06  9.000e-06  0.000e+00 0.000e+00 
+    15   33.936    222.56   4.000e-06  6.200e-06  0.000e+00 0.000e+00 
+    14   60.780    218.01   4.000e-06  3.500e-06  0.000e+00 0.000e+00 
+    13  103.225    215.75   4.000e-06  1.400e-06  0.000e+00 0.000e+00 
+    12  161.270    215.86   4.244e-06  6.500e-07  0.000e+00 0.000e+00 
+    11  234.510    227.25   4.603e-05  3.000e-07  2.300e-01 4.000e+00
+    10  323.046    241.61   2.502e-04  1.850e-07  0.000e+00 0.000e+00 
+     9  420.091    253.99   6.079e-04  1.300e-07  0.000e+00 0.000e+00 
+     8  516.833    263.79   1.121e-03  1.000e-07  9.000e-01 8.000e+00
+     7  613.473    271.92   2.137e-03  8.000e-08  0.000e+00 0.000e+00 
+     6  709.910    279.01   3.863e-03  7.000e-08  0.000e+00 0.000e+00 
+     5  799.156    284.84   5.895e-03  6.000e-08  3.000e-01 1.600e+01
+     4  873.003    288.74   7.802e-03  5.700e-08  0.000e+00 0.000e+00 
+     3  931.555    291.10   9.394e-03  5.300e-08  0.000e+00 0.000e+00 
+     2  974.810    292.67   1.060e-02  5.100e-08  0.000e+00 0.000e+00 
+     1 1002.769    293.65   1.138e-02  5.000e-08  0.000e+00 0.000e+00 
+       1013.000             surface pressure
+                   294.00   surface air temperature
+                   294.00   ground (skin) temperature
+                      1     surface type flag (0=ocn, 1=lnd, 2=sea-ice)
+                    0.010   surface aerodynamic roughness (m)
+                    0.000   snow cover (m) in liquid water equivalent
+                    0.100   visible surface albedo for strng zen ang srfcs
+                    0.100   visible surface albedo for weak  zen ang srfcs
+                    0.100   near-ir surface albedo for strng zen ang srfcs
+                    0.100   near-ir surface albedo for weak zen ang srfcs
+                    0.000   fraction strng zen ang srf
+                    3.55e-4 co2 volume mixing ratio
+
+
+
+Notes on the input:
+
+1) Day of year includes the fraction that determines the solar elevation
+angle; for example, if day 15.0 was used, the local time of calculation
+would be midnight; if day 15.5, conditions would be local noon.  Day of 
+year also includes the change in earth/sun distance, as is done in ccm2.
+The solar constant is set be data statement in routine 'radcsw'.
+
+2) Latitude runs from +90 to -90 degrees.
+
+3) Total number of levels must be the same as the 'plev = ' parameter.
+ 
+4) Pressure data is at the same levels as temperature and other fields;
+for the radiation, the interface pressures between layers are required;
+these are computed as simple averages of adjacent level pressures.
+Pressure data is in milli-bars.
+
+5) Temperatures are in K, h2o and o3 are mass mixing ratios, cloud cover
+as fraction, and cloud liquid water path in g/m2. Note that cloud cover
+of 1 is reset internally to .99999, since exactly 1.0  will cause the 
+longwave code to fail.
+
+6) The last pressure is the surface pressure.
+
+7) The surface temperatures are given as the air temperature in contact
+with the surface, and the actual skin temperature of the surface.
+
+8) Surface type determines how the surface albedos are computed; if ocean
+or sea-ice, albedos are set internally; otherwise, the spectral/zenith
+angle type albedos read in are used.
+
+9) Surface aerodynamic roughness and snow cover are used over land and
+sea-ice to help set surface albedos.
+
+10) CO2 volume mixing ratio is in fraction.

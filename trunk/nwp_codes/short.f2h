@@ -1,0 +1,27 @@
+#f90tohtml input file
+#used for debugging problems with coamps
+@file_array=(
+["short_ls/coamps_forecast.ls","coamps_forcast","#eeeeee"],
+["short_ls/coampslib.ls","coampslib","#eeeeee"],
+["short_ls/oilib.ls","oilib","#eeeeee"]
+);
+$dir_html="/home/bfiedler/shortbrowser/";
+$verbose=1;  
+$c_comment=1;
+$perl_comment=0;
+$tree_depth=20;
+$contents_title="COAMPS";
+@more_trees=('visout','aoutp','aoutz','output',
+'bcubic','adjtq','genbun','poisn2','poisd2','iomdl','insfc');
+@not_on_tree=('cpusecond');
+$subject_hash="coamps.subject";
+$parse_include=0;
+$include_match="^\\s*include|^#include";
+$include_file_match="(\&lt;|')(.*)(\&gt;|')";
+$default_index="coampslib";
+$default_prog="coamps_forecast";
+$aggressive=0;
+#$splitter='[^\(]\(';
+$splitter='[a-zA-Z0-9_]\(';
+#$splitter='\(';
+$comment_color='#447700';

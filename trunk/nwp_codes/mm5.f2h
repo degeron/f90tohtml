@@ -1,0 +1,22 @@
+#f90tohtml input file
+@file_array = ( 
+              ["mm5_ls/pick.ls"   ,"pick"   ,"#eeeeee"],
+              ["mm5_ls/include.ls","include","#ffeeee"]
+);
+$dir_html="/home/bfiedler/mm5browser/";
+$verbose=1;  
+$c_comment=1;
+$perl_comment=0;
+$tree_depth=20;
+$contents_title="MM5v2";
+@more_trees=(initsav,output,chknst,nstlev1,solve3);
+$subject_hash="mm5.subject";
+$parse_include=1;
+$include_match="^#\\s*include|^#include";
+$include_file_match="(\&lt;|')(.*)(\&gt;|')";
+$default_index="pick";
+$default_prog="mm5";
+$trimrcs=1;
+$aggressive=1;
+$splitter='[a-zA-Z0-9_]\('; #splits a line into sublines here to look for links, allows for >1 link per line
+$comment_color='#447700';

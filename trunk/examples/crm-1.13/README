@@ -1,0 +1,88 @@
+$Header: /home/zender/crm/RCS/README,v 1.1 1997/01/02 01:18:05 zender Exp zender $
+
+************************************************************************
+
+CCM3 Column Radiation Model (CRM) description:
+
+CCM3 CRM is a standalone version of the column radiation code employed
+by the NCAR Community Climate Model (CCM3).
+The CRM is composed of the radiation routines from CCM3, along with 
+an interface that allows the user to input information needed by the 
+radiation calculation.
+
+Two input data files are included, one for clear sky 'mls_clr.in', and
+one for cloudy sky 'mls_cld.in'. These are text files containing
+pressures, temperatures, cloud information, etc. required for input
+(for more information, see comments at end of these files). The output
+files are called 'mls_clr.out' and 'mls_cld.out'; these result from
+running the compiled CCM3 CRM on a Sun workstation with the
+corresponding input data files.
+
+The number of levels for CCM3 CRM can be changed (by editing the
+preprocessor variable PLEV and PLEVR in params.h) to whatever vertical
+levels are desired.  However, if this is done, the input data file
+must be changed to include all levels of data. Other changes to the
+radiation model would require the user to modify the appropriate
+internal code.
+  
+For references to articles in the scientific literature which
+describe the radiative transfer methods, see comments in routine
+'radcsw' for the shortwave, and 'radclw' for the longwave.
+
+************************************************************************
+
+Changes in CCM3 CRM compared to CCM2:
+
+CCM3 CRM is similar to the CCM2 CRM.
+
+In the shortwave, an aerosol has been added. It's optical depth (visible)
+is set in 'aermix'. Sulfate optical properties are used in 'radcsw'. For
+clouds, mixed phase particles are used. Ice fraction is determined based
+on temperature. Liquid water and ice particle effective radius are set 
+using pressure; liquid water size is also distinguished between continental
+and maritime surfaces; see routine 'cldefr'. See routine 'radcsw' for 
+description of the ice optical properties.
+
+The solar constant has changed, from 1370 W/m2 in CCM2 to 1367 W/m2 in CCM3.
+
+The surface albedos are the same in CCM3 Column model as in CCM2 Column 
+model, but they are treated differently in the actual CCM3 code. In that
+code, the albedos are specified by the Land Surface Model (LSM).
+
+In the longwave, several trace gases (CH4, N2O, CFC11, and CFC12) are now
+included. Also, two window bands of CO2 are included. 
+Liquid water cloud effective radius is prescribed, but the ice particle 
+radius is allowed to vary. See routines 'cldefr' and 'cldems' for details.
+
+Changes to CRM I/O are described in the INSTALL file.
+
+************************************************************************
+       
+Where to find more information:
+
+The most recent source code and distribution of the CCM3 CRM is to be
+found on the World Wide Web under URL http://www.cgd.ucar.edu/cms/crm
+Significant changes to the CRM will be announced to the community via
+the ccm-users email list, see 
+http://www.cgd.ucar.edu/cms/ccm3/ccm-users.html
+for instructions on how to join this list.
+
+The physics routines underlying the CRM are fully described in 
+NCAR Tech. Note 420, "Description of the NCAR Community Climate Model (CCM3)".
+(available in postscript format from
+http://www.cgd.ucar.edu/cms/ccm3/TN-420/index.html).
+
+Those interested in modifying the CRM for their own purposes may find
+the notes on code organization at the beginning of crm.F useful.
+
+************************************************************************
+
+Charlie Zender and Bruce Briegleb
+Climate Modeling Section
+Climate and Global Dynamics Division
+National Center for Atmospheric Research
+P.O. Box 3000
+Boulder, Colorado  80307-3000
+USA
+
+E-mail: zender@ncar.ucar.edu and bruceb@ncar.ucar.edu 

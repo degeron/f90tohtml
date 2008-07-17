@@ -1,0 +1,15 @@
+author: Brian Fiedler 
+here are a few examples of how to make a subject index for WRF
+note that lines without a semi-colon are not parsed and thus are comments
+
+utility;timing;start_timing
+utility;timing;end_timing
+utility;files;open_r_dataset
+utility;files;open_w_dataset
+
+numerics;diffusion;horizontal_diffusion
+numerics;diffusion;vertical_diffusion
+numerics;runge-kutta;rk_tendency
+
+physics;microphysics;kessler
+physics;boundary layer;mrf

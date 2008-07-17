@@ -1,0 +1,132 @@
+Begin CCM3 Column Radiation Model
+CCM3 CRM Results:
+Conventions:
+ Shortwave fluxes are positive downward
+ Longwave fluxes are positive upward
+ Net Radiative fluxes are positive downward (into the system)
+ Fluxes defined to be zero are not reported (e.g., LW down flx TOA)
+Abbreviations, Acronyms and Definitions:
+ LW   = Longwave
+ LWCF = Longwave Cloud Forcing
+ NCF  = Net Cloud Forcing = SWCF+LWCF
+ NIR  = Near Infrared (0.7 < lambda < 5.0 microns)
+ NRF  = Net Radiative Flux: sum of SW and LW fluxes
+ SW   = Shortwave
+ SWCF = Shortwave Cloud Forcing
+ TOA  = Top of Atmosphere
+ Vis  = Visible (0.2 < lambda < 0.7 microns)
+ atm  = Atmosphere
+ clr  = Clear sky (diagnostic computation with no clouds)
+ dff  = Diffuse flux
+ drc  = Direct flux
+ frc  = Fraction
+ net  = net flux = downwelling minus upwelling flux
+ sfc  = Surface level
+ 
+Sun-Earth Geometry:
+ Day of year (noon Jan 1 = 1.5) =     83.3300
+ Earth-sun distance             =     1.00536 AU
+ Earth latitude                 =   0. degrees
+ Cosine solar zenith angle      =    0.481599
+ Local solar hour               =     7.92004
+ 
+Shortwave (SW) results ( < 5.0 microns):
+ SW albedo               =    0.383868
+ SW albedo (clr)         =    0.160899
+ SW down flux TOA        =     661.873 W m-2
+ SW up flux TOA          =     254.072 W m-2
+ SW up flux TOA (clr)    =     106.495 W m-2
+ SW net flux TOA         =     407.802 W m-2
+ SW net flux TOA (clr)   =     555.379 W m-2
+ SW flux abs atm         =     121.436 W m-2
+ SW flux abs atm (clr)   =     142.685 W m-2
+ SW down flux sfc        =     318.204 W m-2
+ SW up flux sfc          =     31.8391 W m-2
+ SW net flux sfc         =     286.365 W m-2
+ SW net flux sfc  (clr)  =     412.694 W m-2
+ SW cloud forcing TOA    =    -147.577 W m-2
+ SW cloud forcing sfc    =    -126.329 W m-2
+ SWCF(sfc)/SWCF(TOA)     = Ill-defined
+ 
+Longwave (LW) results ( > 5.0 microns):
+ LW up flux TOA          =     237.686 W m-2
+ LW up flux TOA (clr)    =     287.529 W m-2
+ LW up flux sfc          =     423.616 W m-2
+ LW down flux sfc        =     383.628 W m-2
+ LW net flux sfc         =     39.9883 W m-2
+ LW net flux sfc (clr)   =     76.1486 W m-2
+ LW cloud forcing TOA    =     49.8425 W m-2
+ LW cloud forcing sfc    =     36.1603 W m-2
+ 
+Net Radiative Flux results (NRF=SW+LW):
+ NRF up flux TOA         =     491.758 W m-2
+ NRF down flux TOA       =     661.873 W m-2
+ NRF net flux TOA        =     170.115 W m-2
+ NRF net flux TOA (clr)  =     267.850 W m-2
+ NRF up flux sfc         =     455.455 W m-2
+ NRF down flux sfc       =     701.832 W m-2
+ NRF net flux sfc        =     246.377 W m-2
+ NRF net flux sfc (clr)  =     336.545 W m-2
+ NRF cloud forcing TOA   =    -97.7346 W m-2
+ NRF cloud forcing sfc   =    -90.1682 W m-2
+ 
+Solar surface radiation budget components:
+ SW down flux sfc        =     318.204 W m-2
+ SW down flux drc sfc    =    0.472706 W m-2
+ SW down flux dff sfc    =     317.732 W m-2
+ SW down flux dff/drc    =     672.155
+ Vis down flux sfc       =     170.873 W m-2
+ Vis down flux drc sfc   =    0.224534 W m-2
+ Vis down flux dff sfc   =     170.648 W m-2
+ Vis down flux dff/drc   =     760.010
+ NIR down flux sfc       =     147.331 W m-2
+ NIR down flux drc sfc   =    0.248171 W m-2
+ NIR down flux dff sfc   =     147.083 W m-2
+ NIR down flux dff/drc   =     592.667
+ 
+Heating rates:
+ Level  Pressure           SW           LW          Net
+     #        mb      K day-1      K day-1      K day-1
+   1       2.026    9.2602863   -8.4296827    0.8306043
+   2       5.470    4.7459621   -4.5557795    0.1901827
+   3      15.296    2.8359354   -2.3320978    0.5038375
+   4      33.936    1.7341536   -1.1612015    0.5729522
+   5      60.780    1.0292751   -0.5750201    0.4542550
+   6     103.225    0.5442891   -0.3385881    0.2057010
+   7     161.270    0.3684138   -0.2455806    0.1228332
+   8     234.510    0.7559293   -1.4479960   -0.6920667
+   9     323.046    1.1800936   -1.8319539   -0.6518602
+  10     420.091    1.2830147   -1.8610396   -0.5780250
+  11     516.833    1.4691335   -5.2631006   -3.7939670
+  12     613.473    0.7705826   -0.5633950    0.2071876
+  13     709.910    0.8899275   -1.0072796   -0.1173521
+  14     799.156    0.9947245   -2.2556963   -1.2609718
+  15     873.003    0.7095104   -0.9169789   -0.2074685
+  16     931.555    0.7187544   -1.0674796   -0.3487253
+  17     974.810    0.7034168   -1.2093897   -0.5059729
+  18    1002.769    0.6842160   -1.4474128   -0.7631968
+ 
+Cloud microphysics:
+ Level  Pressure      r_e liq      r_e ice      Ice frc
+     #        mb       micron       micron          frc
+   1       2.026    5.0000000   30.0000000    0.0000000
+   2       5.470    8.7350006   30.0000000    0.7470001
+   3      15.296   10.0000000   30.0000000    1.0000000
+   4      33.936   10.0000000   30.0000000    1.0000000
+   5      60.780   10.0000000   30.0000000    1.0000000
+   6     103.225   10.0000000   30.0000000    1.0000000
+   7     161.270   10.0000000   30.0000000    1.0000000
+   8     234.510   10.0000000   30.0000000    1.0000000
+   9     323.046   10.0000000   30.0000000    1.0000000
+  10     420.091    7.2924995   29.2650051    0.4584999
+  11     516.833    5.0000000   24.4899826    0.0000000
+  12     613.473    5.0000000   19.7199917    0.0000000
+  13     709.910    5.0000000   14.9600210    0.0000000
+  14     799.156    5.0000000   10.5549850    0.0000000
+  15     873.003    5.0000000   10.0000000    0.0000000
+  16     931.555    5.0000000   10.0000000    0.0000000
+  17     974.810    5.0000000   10.0000000    0.0000000
+  18    1002.769    5.0000000   10.0000000    0.0000000
+Wrote results to crm.nc                                                                          
+Added SRB results to crm.nc                                                                          
+End CCM3 CRM

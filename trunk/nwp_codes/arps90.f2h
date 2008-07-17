@@ -1,0 +1,50 @@
+#f90tohtml input file
+#this is for ARPS with fortran 90 source code
+#change the $dir_html to where you want the browser to be built.
+#$dir_html should NOT exist.  Also, it can be tarred and moved later.
+$dir_html="/home/bfiedler/arps50browser/";
+@file_array=(
+["arps90_ls/adas.ls","adas","#ffeeee"],
+["arps90_ls/agri.ls","agri","#eeeeff"],
+["arps90_ls/arps.ls","arps","#eeeeee"],
+["arps90_ls/arps_mp.ls","arps_mp","#cceecc"],
+["arps90_ls/arpscvt.ls","arpscvt","#eeffee"],
+["arps90_ls/arpsdiff.ls","arpsdiff","#ccccff"],
+["arps90_ls/arpsens.ls","arpsens","#ccffff"],
+["arps90_ls/arpsextsnd.ls","arpsextsnd","#cceeee"],
+["arps90_ls/arpsintrp.ls","arpsintrp","#eecccc"],
+["arps90_ls/arpsprt.ls","arpsprt","#eeeedd"],
+["arps90_ls/arpssfc.ls","arpssfc","#ddccdd"],
+["arps90_ls/arpssoil.ls","arpssoil","#ddccdd"],
+["arps90_ls/arpstern.ls","arpstern","#ddccdd"],
+["arps90_ls/arpstrn.ls","arpstrn","#ddccdd"],
+["arps90_ls/arpstintrp.ls","arpstintrp","#eecccc"],
+["arps90_ls/ext2arps.ls","ext2arps","#ddcccc"],
+["arps90_ls/mci2arps.ls","mci2arps","#ccccdd"],
+["arps90_ls/modules.ls","modules","#ffffbb"],
+["arps90_ls/wtretcol.ls","wtretcol","#ccccdd"]
+);
+#["arps_ls/arpsplt.ls","arpsplt","#eecccc"],
+$verbose=1;  
+$c_comment=0;
+$perl_comment=0;
+$tree_depth=20;
+$contents_title="ARPS 5.0 f90";
+@more_trees=(pakread,dcdlabel,pakdump,wrtgrid,dtadump,gribdump,exbdump,
+gradsdump,abortdmp);
+$subject_hash="arps.subject";
+$parse_include=0;
+$include_match="NEVERHAPPENS"; #not looking for include files
+$include_file_match="(\&lt;|')(.*)(\&gt;|')";
+$default_index="arps";
+$default_prog="arps";
+$function_prefix="F_";
+$search_regex='qv\(.,.,.,.\).*=';
+$search_files='arps/*';
+
+$aggressive=1;
+#more aggressively looks for functions
+
+$splitter='[a-zA-Z0-9_]\(';
+#splits a line into sublines here to look for links, allows for >1 link per line
+$comment_color='#447700';

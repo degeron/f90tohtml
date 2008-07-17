@@ -1,0 +1,27 @@
+
+directions for WRF users:
+repair $the_path in wrf_prepare.pl
+repair $dir_html in wrf.f2h
+then:
+wrf_prepare.pl
+f90tohtml wrf.f2h
+
+directions for ARPS users:
+do as above, but substitute
+arps for wrf, if using arps4.5.1
+arps90 for wrf, if using arps5.0
+
+directions for COAMPS users:
+do as above, but substitute
+coamps for wrf
+
+NOTES:
+If grep 'bfiedler' wrf_ls/*.ls
+find any hits, then something went wrong with wrf_prepare.pl
+
+There are duplicate subroutine names in WRF (e.g., for 
+different initializations).  v1.02 of f90tohtml now allows
+for "commenting out" file names with # in the .ls files,
+thus preventing f90tohtml from becoming confused.
+
+wrf.f2h was improved a bit on March 30, 2003

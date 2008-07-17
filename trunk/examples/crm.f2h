@@ -1,0 +1,55 @@
+#f90tohtml input file
+
+@file_array=(
+["crm_ls/main.ls","main","#ffffcc"],
+["crm_ls/src.ls","src","#eeeeff"],
+["crm_ls/include.ls","include","#ffeeee"]
+);
+
+$dir_html="/home/bfiedler/crmbrowser/";
+#browser made here
+
+$verbose=1;  
+#set to zero to reduce output to monitor.
+
+$c_comment=1;
+# f77 code, with 'c' in first column treated as comment
+
+$perl_comment=0;
+# the '#' is treated as comment
+
+$tree_depth=20;
+#more than enough for this tree! (prevents recursion errors)
+
+$contents_title="CRM";
+#title of browser
+
+@more_trees=('radcsw','radclw');
+#programs always get trees, these subroutine do too
+
+$subject_hash="";
+#no subject hash to use 
+
+$parse_include=1;
+# look through include files for links
+
+$include_match='^\\s*include|^#include';
+# where to tag include file links
+
+$include_file_match='(&lt;)(.*\.h)(&gt;)';
+# at include file link, how to match include file 
+
+$default_index="main";
+# display this index 
+
+$default_prog="CRM";
+# display this program 
+
+$aggressive=1;
+#aggressively looks for function calls
+
+$splitter='[a-zA-Z0-9_]\(';
+#splits lines into sub lines so that >1 link per line can be found
+
+$comment_color='#447700';
+#assign color for the comments in the code

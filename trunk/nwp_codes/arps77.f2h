@@ -1,0 +1,47 @@
+#f90tohtml input file
+#this is apparently for the f77 version
+#change the $dir_html to where you want the browser to be built.
+#$dir_html should NOT exist.  Also, it can be tarred and moved later.
+$dir_html="/home/bfiedler/arps451browser/";
+@file_array=(
+["arps_ls/88d2arps.ls","882darps","#bbeeee"],
+["arps_ls/adas.ls","adas","#ffeeee"],
+["arps_ls/agri.ls","agri","#eeeeff"],
+["arps_ls/arps.ls","arps","#eeeeee"],
+["arps_ls/arps_mp.ls","arps_mp","#cceecc"],
+["arps_ls/arpscvt.ls","arpscvt","#eeffee"],
+["arps_ls/arpsdiff.ls","arpsdiff","#ccccff"],
+["arps_ls/arpsens.ls","arpsens","#eeccff"],
+["arps_ls/arpsextsnd.ls","arpsextsnd","#cceeee"],
+["arps_ls/arpsintrp.ls","arpsintrp","#eecccc"],
+["arps_ls/arpsprt.ls","arpsprt","#eeeedd"],
+["arps_ls/arpssfc.ls","arpssfc","#ddccdd"],
+["arps_ls/arpssoil.ls","arpssoil","#eeccdd"],
+["arps_ls/arpstern.ls","arpstern","#eeffff"],
+["arps_ls/arpstintrp.ls","arpstintrp","#eeeebb"],
+["arps_ls/arpstrn.ls","arpstrn","#ffffff"],
+["arps_ls/ext2arps.ls","ext2arps","#ddcccc"],
+["arps_ls/mci2arps.ls","mci2arps","#dddddd"],
+["arps_ls/wtretcol.ls","wtretcol","#ccccdd"],
+["arps_ls/assim.ls","assim","#ffeeff"],
+["arps_ls/include.ls","include","#ffeeff"]
+);
+#["arps_ls/arpsplt.ls","arpsplt","#eecccc"],
+$verbose=1;  
+$c_comment=1;
+$perl_comment=1;
+$tree_depth=20;
+$contents_title="ARPS 4.5.1";
+@more_trees=(pakread,dcdlabel,pakdump,wrtgrid,dtadump,gribdump,exbdump,
+gradsdump,abortdmp);
+$subject_hash="arps.subject";
+$parse_include=0;
+$include_match="^\\s*include";
+$include_file_match="(\&lt;|')(.*)(\&gt;|')";
+$default_index="arps";
+$default_prog="arps";
+$function_prefix="F_";
+$search_regex='qv\(.,.,.,.\).*=';
+$search_files='arps/*';
+$splitter='[a-zA-Z0-9_]\('; #splits a line into sublines here to look for links, allows for >1 link per line
+$comment_color='#447700';
