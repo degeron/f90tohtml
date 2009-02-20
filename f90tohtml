@@ -710,7 +710,7 @@ sub add_search_engine {
         . '<form action="../cgi-bin/grepper.cgi" target="index">'
         . "\n"
         . "Enter "
-        . "<a href='http://perldoc.com/perl5.8.0/pod/perlre.html'"
+        . "<a href='http://perldoc.perl.org/perlre.html'"
         . "target='$bottom_target'>regular expression</a>:<br>"
         . "\n"
         . '<input name="grep" value="'
